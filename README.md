@@ -1,5 +1,7 @@
 # Philosophy Atlas
 
+**Live site:** https://c171017.github.io/PhilTimeLine/
+
 A connected website for exploring philosophy through time, geography, and ideas. The three pages share a selected thinker and year, with that context saved in the URL for sharing and reloading.
 
 Each visualization fills the viewport. Navigation, filters, question keys, and expandable reading panels overlay the canvas. Parchment, classical typography, and a faint public-domain Raphael fresco establish a sense of history. See the [design notes and asset credits](docs/design.md).
