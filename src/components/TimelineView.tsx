@@ -69,10 +69,12 @@ export default function TimelineView({
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [width, setWidth] = useState(1000);
+  const [viewport, setViewport] = useState({ height: 0, immersive: false });
   const [range, setRange] = useState<WindowRange>({ start: 1450, end: 2026 });
   const [showEvents, setShowEvents] = useState(true);
   const [popup, setPopup] = useState<Popup | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const drag = useRef<{
     mode: "pan" | "year";
     x: number;
@@ -87,6 +89,16 @@ export default function TimelineView({
   } | null>(null);
   const left = width < 650 ? 99 : 145;
   const right = width - 25;
+  const plotTop = viewport.immersive ? (width < 650 ? 260 : 290) : 81;
+  const axisOffset = plotTop - 81;
+  const bottomSpace = viewport.immersive ? (width <= 1000 ? 305 : 155) : 0;
+  const overviewWidth = viewport.immersive
+    ? Math.max(
+        200,
+        Math.min(650, width - (width < 650 ? 32 : width <= 1000 ? 48 : 440)) -
+          32,
+      )
+    : width - 40;
   const plotWidth = Math.max(100, right - left);
   const span = range.end - range.start;
   const level = span > 1400 ? "eras" : span > 420 ? "thinkers" : "works";
@@ -108,9 +120,14 @@ export default function TimelineView({
   useEffect(() => {
     const node = containerRef.current;
     if (!node) return;
-    const observer = new ResizeObserver((entries) =>
-      setWidth(Math.max(340, entries[0].contentRect.width)),
-    );
+    const observer = new ResizeObserver((entries) => {
+      const bounds = entries[0].contentRect;
+      setWidth(Math.max(280, bounds.width));
+      setViewport({
+        height: bounds.height,
+        immersive: !!node.closest(".immersive"),
+      });
+    });
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
@@ -175,10 +192,18 @@ export default function TimelineView({
   }, [year]);
 
   const layout = useMemo(() => {
-    let laneTop = 81;
+    let laneTop = plotTop;
+    const laneMinimum = viewport.immersive
+      ? Math.max(
+          65,
+          (viewport.height - plotTop - bottomSpace - (showEvents ? 72 : 22)) /
+            LANES.length,
+        )
+      : 91;
     const placements: Placement[] = [];
     const lanes = LANES.map((lane) => {
       const rowEnds: number[] = [];
+      const placementStart = placements.length;
       const members = philosophers
         .filter(
           (p) =>
@@ -221,17 +246,34 @@ export default function TimelineView({
           y: laneTop + 38 + row * (level === "works" ? 48 : 35),
         });
       }
-      const height = Math.max(
-        91,
-        rowEnds.length * (level === "works" ? 48 : 35) + 47,
-      );
+      const naturalHeight = rowEnds.length * (level === "works" ? 48 : 35) + 47;
+      const height = Math.max(laneMinimum, naturalHeight);
+      // Sparse lanes occupy the available mural, while dense lanes retain their
+      // readable row spacing and can scroll vertically.
+      if (viewport.immersive)
+        for (let index = placementStart; index < placements.length; index++)
+          placements[index].y += Math.max(0, height - naturalHeight) / 2;
       const result = { ...lane, top: laneTop, height, count: members.length };
       laneTop += height;
       return result;
     });
     return { lanes, placements, end: laneTop };
-  }, [philosophers, range, left, x, level, selectedId]);
-  const height = layout.end + (showEvents ? 72 : 22);
+  }, [
+    philosophers,
+    range,
+    left,
+    x,
+    level,
+    selectedId,
+    plotTop,
+    viewport,
+    bottomSpace,
+    showEvents,
+  ]);
+  const height = Math.max(
+    viewport.immersive ? viewport.height : 0,
+    layout.end + (showEvents ? 72 : 22) + bottomSpace,
+  );
   const tickStep =
     span > 2200
       ? 500
@@ -375,6 +417,12 @@ export default function TimelineView({
     pinch.current = null;
     setDragging(false);
   };
+  const pointerCancel = (event: ReactPointerEvent<SVGSVGElement>) => {
+    pointers.current.delete(event.pointerId);
+    drag.current = null;
+    pinch.current = null;
+    setDragging(false);
+  };
   const keyboard = (event: KeyboardEvent<SVGSVGElement>) => {
     if (event.target !== event.currentTarget) return;
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
@@ -440,8 +488,19 @@ export default function TimelineView({
             <RotateCcw size={14} /> Fit all
           </button>
         </div>
+        <label className="tl-event-toggle tl-mobile-events">
+          <input
+            type="checkbox"
+            checked={showEvents}
+            onChange={(event) => setShowEvents(event.target.checked)}
+          />
+          Historical events
+        </label>
       </div>
-      <div className={`tl-canvas-wrap ${dragging ? "tl-dragging" : ""}`}>
+      <div
+        className={`tl-canvas-wrap ${dragging ? "tl-dragging" : ""} ${scrolled ? "is-scrolled" : ""}`}
+        onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 40)}
+      >
         <svg
           ref={svgRef}
           className="tl-canvas"
@@ -454,7 +513,7 @@ export default function TimelineView({
           onPointerDown={pointerDown}
           onPointerMove={pointerMove}
           onPointerUp={pointerUp}
-          onPointerCancel={pointerUp}
+          onPointerCancel={pointerCancel}
           onKeyDown={keyboard}
         >
           <defs>
@@ -518,15 +577,15 @@ export default function TimelineView({
                 <g key={era.name}>
                   <rect
                     x={start}
-                    y={12}
+                    y={12 + axisOffset}
                     width={Math.max(0, end - start)}
                     height={22}
-                    fill="#eeede5"
+                    fill={viewport.immersive ? "#dfccb04d" : "#eeede5"}
                   />
                   {end - start > 70 && (
                     <text
                       x={(start + end) / 2}
-                      y={26}
+                      y={26 + axisOffset}
                       textAnchor="middle"
                       className="tl-era-label"
                     >
@@ -541,13 +600,13 @@ export default function TimelineView({
                 <line
                   x1={x(date)}
                   x2={x(date)}
-                  y1={55}
-                  y2={height - 5}
+                  y1={55 + axisOffset}
+                  y2={layout.end + (showEvents ? 64 : 14)}
                   className="tl-grid"
                 />
                 <text
                   x={x(date)}
-                  y={58}
+                  y={58 + axisOffset}
                   textAnchor="middle"
                   className="tl-tick"
                 >
@@ -556,8 +615,8 @@ export default function TimelineView({
                 <line
                   x1={x(date)}
                   x2={x(date)}
-                  y1={65}
-                  y2={71}
+                  y1={65 + axisOffset}
+                  y2={71 + axisOffset}
                   stroke="#bebcaf"
                 />
               </g>
@@ -616,6 +675,16 @@ export default function TimelineView({
                 left + 5,
                 end < left ? x(firstVisibleWork?.year ?? p.birthYear) : start,
               );
+              const labelCharacters = Math.max(
+                1,
+                Math.floor((right - labelX) / 8),
+              );
+              const displayName =
+                viewport.immersive &&
+                width < 650 &&
+                p.name.length > labelCharacters
+                  ? `${p.name.slice(0, Math.max(0, labelCharacters - 1)).trimEnd()}…`
+                  : p.name;
               const highlightedWork = p.works.reduce(
                 (best, work, index) =>
                   Math.abs(work.year - year) <
@@ -690,7 +759,7 @@ export default function TimelineView({
                         className="tl-person-name"
                         fill={isSelected ? "#303c33" : "#484a43"}
                       >
-                        {p.name}
+                        {displayName}
                       </text>
                     )}
                     {!p.birthYearUnknown && (
@@ -916,8 +985,8 @@ export default function TimelineView({
                 <line
                   x1={x(year)}
                   x2={x(year)}
-                  y1={34}
-                  y2={height - 7}
+                  y1={34 + axisOffset}
+                  y2={layout.end + (showEvents ? 64 : 14)}
                   stroke="#38584b"
                   strokeWidth={1}
                   strokeDasharray="4 4"
@@ -925,7 +994,7 @@ export default function TimelineView({
                 />
                 <rect
                   x={x(year) - 32}
-                  y={37}
+                  y={37 + axisOffset}
                   width={64}
                   height={24}
                   rx={4}
@@ -933,7 +1002,7 @@ export default function TimelineView({
                 />
                 <text
                   x={x(year)}
-                  y={53}
+                  y={53 + axisOffset}
                   textAnchor="middle"
                   className="tl-year-label"
                 >
@@ -1207,7 +1276,7 @@ export default function TimelineView({
           className="tl-overview-chart"
           width="100%"
           height={44}
-          viewBox={`0 0 ${width - 40} 44`}
+          viewBox={`0 0 ${overviewWidth} 44`}
           role="slider"
           tabIndex={0}
           aria-label="Timeline overview navigator"
@@ -1241,7 +1310,7 @@ export default function TimelineView({
           <rect
             x={0}
             y={0}
-            width={width - 40}
+            width={overviewWidth}
             height={28}
             rx={3}
             fill="#eeeee7"
@@ -1249,12 +1318,12 @@ export default function TimelineView({
           {philosophers.map((p) => (
             <line
               key={p.id}
-              x1={((p.birthYear - MIN_YEAR) / HISTORY) * (width - 40)}
+              x1={((p.birthYear - MIN_YEAR) / HISTORY) * overviewWidth}
               x2={
                 (((p.birthYearUnknown ? p.birthYear : endYearFor(p)) -
                   MIN_YEAR) /
                   HISTORY) *
-                (width - 40)
+                overviewWidth
               }
               y1={5 + LANES.findIndex((lane) => lane.id === p.questionLane) * 4}
               y2={5 + LANES.findIndex((lane) => lane.id === p.questionLane) * 4}
@@ -1268,9 +1337,9 @@ export default function TimelineView({
             />
           ))}
           <rect
-            x={((range.start - MIN_YEAR) / HISTORY) * (width - 40)}
+            x={((range.start - MIN_YEAR) / HISTORY) * overviewWidth}
             y={0}
-            width={(span / HISTORY) * (width - 40)}
+            width={(span / HISTORY) * overviewWidth}
             height={28}
             rx={3}
             fill="#38584b"
@@ -1281,7 +1350,7 @@ export default function TimelineView({
             {formatYear(MIN_YEAR)}
           </text>
           <text
-            x={width - 40}
+            x={overviewWidth}
             y={42}
             textAnchor="end"
             className="tl-overview-year"

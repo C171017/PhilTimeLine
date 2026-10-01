@@ -1,0 +1,1033 @@
+@font-face {
+  font-family: "EB Garamond";
+  src: url("/fonts/eb-garamond-regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "EB Garamond";
+  src: url("/fonts/eb-garamond-italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: Cinzel;
+  src: url("/fonts/cinzel.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --ink: #38291f;
+  --muted: #705e4d;
+  --line: #b394633d;
+  --paper: #f3e8d3;
+  --green: #785831;
+  --gold: #ad8450;
+  --umber: #39291f;
+  --overlay-paper: #f8eedcef;
+  --overlay-border: #ad885854;
+  --overlay-shadow: 0 8px 32px #50371d14, inset 0 1px 0 #fff7e9;
+  color: var(--ink);
+  background: var(--paper);
+}
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+body {
+  overflow: hidden;
+}
+[hidden] {
+  display: none !important;
+}
+::selection {
+  background: #d6ba88;
+  color: #39291f;
+}
+.immersive {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  background: radial-gradient(
+    ellipse at 45% 40%,
+    #fcf4e4 0%,
+    #f2e4cb 70%,
+    #e4d3b4 100%
+  );
+  color: var(--ink);
+}
+.atlas-art,
+.atlas-grain,
+.atlas-frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.atlas-art {
+  z-index: -1;
+  background: url("/art/school-of-athens.jpg") 84% 48% / cover no-repeat;
+  opacity: 0.12;
+  mix-blend-mode: multiply;
+  mask-image: linear-gradient(90deg, transparent, #0007 30%, #000 75%);
+}
+.atlas-grain {
+  z-index: 20;
+  opacity: 0.045;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+}
+.atlas-frame {
+  inset: 10px;
+  z-index: 21;
+  border: 1px solid #9c79452d;
+}
+.immersive .site-header {
+  position: absolute;
+  z-index: 30;
+  top: 18px;
+  left: 24px;
+  right: 24px;
+  height: 56px;
+  padding: 0 18px;
+  gap: 19px;
+  border: 1px solid #c6a16c70;
+  border-radius: 4px;
+  background: linear-gradient(120deg, #3d2e24f7, #2f251eef);
+  color: #f4e6cd;
+  box-shadow:
+    0 4px 22px #49321f22,
+    inset 0 1px 0 #efd9b412;
+  backdrop-filter: blur(14px);
+}
+.immersive .brand {
+  gap: 10px;
+  font-family: Cinzel, Georgia, serif;
+  font-size: 15px;
+  letter-spacing: 0.3px;
+  color: #f5e5c7;
+}
+.immersive .brand-symbol {
+  width: 29px;
+  height: 29px;
+  color: #dbb982;
+  border-color: #b1915d80;
+}
+.immersive .brand-symbol svg {
+  width: 22px;
+  height: 22px;
+}
+.immersive .brand-light {
+  color: #d2bb96;
+  margin-left: 5px;
+}
+.immersive .view-nav {
+  margin: 0 auto;
+  gap: 5px;
+}
+.immersive .view-nav a {
+  padding: 9px 16px;
+  border-radius: 2px;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  color: #e2cfaf;
+  border: 1px solid transparent;
+}
+.immersive .view-nav a:hover {
+  background: #c6a46e14;
+  color: #fff1d7;
+}
+.immersive .view-nav a[aria-current="page"] {
+  background: #c6a46e20;
+  border-color: #ba99614d;
+  color: #f6e4c2;
+  font-weight: 500;
+}
+.immersive .global-search {
+  width: 224px;
+  padding: 9px 10px;
+  gap: 8px;
+  color: #d6c2a2;
+  border: 1px solid #c4a37436;
+  border-radius: 3px;
+  background: #fff7e509;
+}
+.immersive .global-search input {
+  color: #f3e5cf;
+  font-size: 11px;
+}
+.immersive .global-search input::placeholder {
+  color: #d6c2a2;
+}
+.immersive .global-search kbd {
+  border-color: #a3896457;
+  color: #d6c2a2;
+  border-radius: 2px;
+}
+.immersive .header-about {
+  margin: 0;
+}
+.immersive .header-about,
+.immersive .header-guide {
+  color: #dec59e;
+  width: 28px;
+  height: 32px;
+}
+.immersive .header-about:hover,
+.immersive .header-guide:hover {
+  background: #a3865029;
+}
+.immersive .search-results {
+  top: 45px;
+  right: 0;
+  width: 330px;
+  padding-top: 17px;
+  border-radius: 4px;
+  background: #f8efdf;
+  border-color: var(--overlay-border);
+  color: var(--ink);
+  box-shadow: 0 12px 38px #3d261f29;
+}
+.immersive .search-result {
+  border-radius: 2px;
+}
+.immersive .search-result:hover,
+.immersive .search-result:focus {
+  background: #dfcba94a;
+}
+.immersive .search-result strong {
+  font-family: "EB Garamond", Georgia, serif;
+  font-weight: 400;
+  font-size: 19px;
+  color: #382a1f;
+}
+.immersive .search-result small,
+.immersive .search-empty {
+  color: #70583f;
+}
+.immersive .search-result > svg {
+  color: #8b673b;
+}
+.immersive .atlas-main {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+}
+.immersive .intro {
+  position: absolute;
+  z-index: 4;
+  top: 102px;
+  left: 32px;
+  padding: 0;
+  margin: 0;
+  width: min(510px, 52%);
+  pointer-events: none;
+  display: block;
+}
+.immersive .intro-eyebrow {
+  margin-bottom: 8px;
+  gap: 9px;
+  font-size: 8px;
+  letter-spacing: 1.35px;
+  color: #70583b;
+}
+.chapter-number {
+  font-family: Cinzel, Georgia, serif;
+  font-size: 14px;
+  letter-spacing: 0;
+  color: #906b35;
+}
+.immersive .intro-divider {
+  background: #9d7b447a;
+}
+.immersive h1 {
+  font-family: "EB Garamond", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(36px, 3.8vw, 55px);
+  letter-spacing: -0.9px;
+  line-height: 1;
+  color: #3d2b1e;
+  text-shadow: 0 2px 18px #f8edda;
+}
+.immersive .intro > div > p {
+  font-size: 11px;
+  color: #735d45;
+  line-height: 1.65;
+  margin-top: 9px;
+  max-width: 415px;
+}
+.immersive.view-timeline:has(.tl-canvas-wrap.is-scrolled) .intro {
+  opacity: 0;
+}
+.immersive .eyebrow {
+  color: #71583d;
+}
+.overlay-switches {
+  position: absolute;
+  z-index: 12;
+  top: 103px;
+  right: 24px;
+  display: flex;
+  gap: 8px;
+}
+.overlay-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 35px;
+  padding: 8px 12px;
+  font-size: 10px;
+  color: #634a30;
+  border: 1px solid var(--overlay-border);
+  border-radius: 3px;
+  background: var(--overlay-paper);
+  box-shadow: 0 2px 10px #523a1710;
+  backdrop-filter: blur(12px);
+}
+.overlay-toggle:hover,
+.overlay-toggle.is-active {
+  border-color: #9471438c;
+  background: #eddec2;
+}
+.overlay-toggle[aria-expanded="true"] > svg:last-child {
+  transform: rotate(180deg);
+}
+.key-dots {
+  display: flex;
+  gap: 3px;
+}
+.key-dots i {
+  width: 4px;
+  height: 12px;
+  border-radius: 2px;
+}
+.filter-count {
+  background: #785831;
+  color: #fff0d7;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+}
+.immersive .explore-toolbar,
+.immersive .question-legend {
+  position: absolute;
+  z-index: 15;
+  top: 148px;
+  right: 24px;
+  left: auto;
+  width: 310px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  margin: 0;
+  padding: 18px;
+  color: #63492f;
+  border: 1px solid var(--overlay-border);
+  border-radius: 4px;
+  background: #f8eedeef;
+  box-shadow: var(--overlay-shadow);
+  backdrop-filter: blur(18px);
+}
+.immersive .filter-controls {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 11px;
+}
+.immersive .toolbar-label {
+  margin: 0 0 2px;
+  color: #775a36;
+  font-size: 9px;
+}
+.immersive .select-wrap {
+  background: #ede0c83d;
+  border-color: #b7935c5c;
+  border-radius: 2px;
+}
+.immersive .select-wrap select {
+  width: 100%;
+  padding: 11px;
+  font-size: 12px;
+  color: #5f452b;
+}
+.immersive .select-wrap svg,
+.immersive .clear-filters,
+.immersive .collection-label,
+.immersive .collection-label button {
+  color: #775a39;
+}
+.immersive .collection-label {
+  justify-content: space-between;
+  font-size: 10px;
+}
+.immersive .collection-label button {
+  font-size: 10px;
+}
+.immersive .question-legend {
+  gap: 11px;
+}
+.immersive .question-legend .legend-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.immersive .question-legend .legend-heading .icon-button {
+  width: 24px;
+  height: 24px;
+}
+.immersive .question-legend > div:not(.legend-heading) {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.immersive .question-legend > div:not(.legend-heading) > button {
+  display: grid;
+  grid-template-columns: 8px 1fr;
+  gap: 5px 9px;
+  text-align: left;
+  padding: 11px 0;
+  font-size: 12px;
+  border-top: 1px solid #ab895536;
+  color: #5d472d;
+}
+.immersive .question-legend .small-dot {
+  margin-top: 5px;
+}
+.immersive .question-legend small {
+  grid-column: 2;
+  display: block;
+  font-size: 10px;
+  color: #735d41;
+  line-height: 1.5;
+}
+.immersive .question-legend button.active {
+  color: #3c2a19;
+}
+.immersive .question-legend .legend-note {
+  margin: 0;
+  font-size: 10px;
+  color: #745d42;
+  line-height: 1.6;
+}
+.immersive .atlas-workspace {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.immersive .visual-panel {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.immersive .view-loading {
+  min-height: 100dvh;
+  color: #785b36;
+  font-family: "EB Garamond", Georgia, serif;
+}
+.immersive .visual-panel .tl-person-name {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 17px;
+}
+.immersive .visual-panel .tl-lane-name {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 15px;
+}
+.immersive .inspector {
+  position: absolute;
+  z-index: 18;
+  top: 182px;
+  right: 24px;
+  bottom: 105px;
+  width: 360px;
+  min-height: 0;
+  max-height: none;
+  display: block;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 4px;
+  border: 1px solid #a7824d6b;
+  background: #f8eddbef;
+  box-shadow:
+    0 12px 48px #49321f26,
+    inset 0 1px 0 #fff8e9;
+  backdrop-filter: blur(20px);
+  scrollbar-width: thin;
+  scrollbar-color: #b89a6b transparent;
+}
+.immersive .inspector-top {
+  padding: 14px 19px 0;
+}
+.immersive .inspector-top-actions {
+  color: #705131;
+}
+.immersive .icon-button:hover {
+  background: #dbc2973b;
+}
+.immersive .philosopher-monogram {
+  position: absolute;
+  top: 59px;
+  right: 22px;
+  height: 67px;
+  width: 67px;
+  margin: 0;
+  background: #d4bb8550;
+}
+.immersive .philosopher-monogram > span {
+  font-family: Cinzel, Georgia, serif;
+  font-size: 18px;
+  color: #795831;
+}
+.immersive .philosopher-monogram svg {
+  stroke: #ad885774;
+}
+.immersive .inspector-identity {
+  margin: 0;
+  padding: 23px 20px 19px;
+  text-align: left;
+}
+.immersive .tradition-label {
+  color: #7c6448;
+  font-size: 10px;
+  max-width: 235px;
+  display: block;
+}
+.immersive .inspector h2 {
+  color: #3e2d1e;
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 30px;
+  letter-spacing: -0.4px;
+  max-width: 244px;
+  line-height: 1.07;
+  margin: 8px 0;
+}
+.immersive .life-dates {
+  color: #715940;
+  font-size: 11px;
+}
+.immersive .question-badge {
+  background: #e8d9bd59;
+  border-color: #d3ba927d;
+  font-size: 10px;
+  margin-top: 12px;
+  color: #61482e;
+}
+.immersive .inspector-tabs {
+  border-color: #b7935c3f;
+  padding: 0 19px;
+}
+.immersive .inspector-tabs button {
+  color: #785d3f;
+  font-size: 11px;
+  padding-bottom: 11px;
+}
+.immersive .inspector-tabs button[aria-selected="true"] {
+  color: #593c21;
+  border-color: #926a35;
+}
+.immersive .inspector-body {
+  padding: 22px 20px;
+}
+.immersive .core-idea {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 20px;
+  line-height: 1.47;
+  color: #4a3522;
+}
+.immersive .location-card {
+  color: #765b3b;
+  background: #e3cda64d;
+  border-color: #be9b6047;
+  border-radius: 3px;
+}
+.immersive .location-card small,
+.immersive .work-card small,
+.immersive .no-works {
+  color: #765d42;
+}
+.immersive .work-card {
+  color: #5c4328;
+  background: #e8d7b741;
+  border-color: #b594613f;
+  border-radius: 3px;
+}
+.immersive .work-card strong {
+  font-family: "EB Garamond", Georgia, serif;
+  font-weight: 400;
+  font-size: 18px;
+}
+.immersive .read-across button {
+  background: #e5d3b341;
+  border-color: #ba976049;
+  color: #73552f;
+  border-radius: 2px;
+}
+.immersive .works-list button,
+.immersive .source-links a {
+  border-color: #b3936040;
+  color: #76582f;
+}
+.immersive .works-list strong {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: #50381e;
+}
+.immersive .works-list span,
+.immersive .works-list small,
+.immersive .source-note p,
+.immersive .source-links small {
+  color: #735b42;
+  font-size: 11px;
+}
+.immersive .source-note {
+  background: #ead8b44a;
+  border-color: #bc9b6339;
+}
+.immersive .inspector-footer {
+  border-color: #b9986145;
+  padding: 13px 20px;
+  font-size: 10px;
+  color: #735a3c;
+}
+.immersive .inspector-footer .small-dot {
+  background: #aa8550;
+}
+.inspector-peek {
+  position: absolute;
+  z-index: 18;
+  bottom: 24px;
+  right: 24px;
+  width: 330px;
+  border: 1px solid #b5905b80;
+  border-radius: 4px;
+  background: linear-gradient(120deg, #443122f5, #32271eef);
+  color: #f2e4c9;
+  box-shadow: 0 6px 25px #4a301d26;
+  backdrop-filter: blur(18px);
+}
+.inspector-peek > button {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 13px 16px;
+  text-align: left;
+}
+.peek-book {
+  color: #d5b77f;
+  width: 31px;
+  height: 38px;
+  border-right: 1px solid #b59a655e;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.peek-identity {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 9px;
+  align-items: baseline;
+}
+.inspector-peek .eyebrow {
+  color: #d1b88f;
+  font-size: 7px;
+  grid-column: 1 / -1;
+  letter-spacing: 1.3px;
+}
+.inspector-peek h2 {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 23px;
+  color: #f4e5c9;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  line-height: 1.1;
+}
+.immersive .inspector-peek .life-dates {
+  font-size: 9px;
+  color: #d9c4a4;
+}
+.inspector-peek > button > svg {
+  color: #d4b880;
+  flex-shrink: 0;
+}
+.inspector-peek:hover {
+  border-color: #d4b273;
+  background: #493324;
+}
+.immersive .shared-time {
+  position: absolute;
+  z-index: 6;
+  left: 24px;
+  bottom: 24px;
+  width: min(650px, calc(100% - 430px));
+  margin: 0;
+  padding: 13px 17px;
+  border: 1px solid var(--overlay-border);
+  border-radius: 4px;
+  background: var(--overlay-paper);
+  color: #725431;
+  box-shadow: var(--overlay-shadow);
+  backdrop-filter: blur(16px);
+}
+.immersive .shared-time strong {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 21px;
+  color: #533b22;
+}
+.immersive .shared-year-slider small {
+  color: #725b3e;
+}
+.immersive input[type="range"] {
+  accent-color: #8c6836;
+}
+.immersive .year-input-wrap input {
+  background: #efe0c838;
+  border-color: #b08b514d;
+  color: #6c4c2a;
+}
+.immersive .modal-backdrop {
+  background: #2f2317a3;
+  backdrop-filter: blur(7px);
+}
+.immersive .modal {
+  background: #f4e8d2;
+  border-color: #c4a272;
+  border-radius: 4px;
+  color: #503922;
+  box-shadow: 0 24px 90px #160e084a;
+}
+.immersive .modal h2 {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 39px;
+  color: #3e2b19;
+  letter-spacing: -0.5px;
+}
+.immersive .modal-lead {
+  color: #695034;
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 21px;
+  line-height: 1.45;
+}
+.immersive .guide-list h3,
+.immersive .method-grid h3 {
+  color: #644624;
+}
+.immersive .guide-list p,
+.immersive .method-grid p,
+.immersive .method-note p {
+  color: #70573b;
+}
+.immersive .guide-list > div > span {
+  border-color: #ac8b556b;
+  color: #825e2d;
+  font-family: Cinzel, Georgia, serif;
+}
+.immersive .method-grid section > svg {
+  color: #926b35;
+}
+.immersive .method-note {
+  background: #dfcaa54d;
+  color: #8c622c;
+}
+.art-credit {
+  font-size: 10px;
+  line-height: 1.7;
+  color: #71583a;
+  margin-bottom: 22px;
+}
+.art-credit a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.immersive .primary-button {
+  background: #654522;
+  color: #fbefd7;
+  border-radius: 2px;
+}
+.immersive .primary-button:hover {
+  background: #4d3119;
+}
+.immersive button:focus-visible,
+.immersive a:focus-visible,
+.immersive input:focus-visible,
+.immersive select:focus-visible,
+.immersive summary:focus-visible {
+  outline-color: #ad8242;
+}
+
+@media (max-width: 1100px) {
+  .immersive .site-header {
+    gap: 12px;
+  }
+  .immersive .brand {
+    font-size: 13px;
+    gap: 7px;
+  }
+  .immersive .view-nav a {
+    padding: 9px 11px;
+  }
+  .immersive .global-search {
+    width: 190px;
+  }
+  .immersive .global-search kbd {
+    display: none;
+  }
+}
+@media (max-width: 1000px) {
+  .immersive .shared-time {
+    bottom: 102px;
+    width: calc(100% - 48px);
+    max-width: 650px;
+  }
+  .immersive .inspector {
+    bottom: 185px;
+    width: 330px;
+  }
+  .immersive .inspector-peek {
+    width: 320px;
+  }
+}
+@media (max-width: 700px) {
+  .atlas-frame {
+    inset: 6px;
+  }
+  .atlas-art {
+    background-position: 60% center;
+    opacity: 0.09;
+  }
+  .immersive .site-header {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    height: 88px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px 26px 26px;
+    grid-template-rows: 35px 34px;
+    padding: 7px 10px;
+    gap: 4px 5px;
+  }
+  .immersive .site-header > a {
+    grid-row: 1;
+    grid-column: 1;
+  }
+  .immersive .brand {
+    font-size: 13px;
+    gap: 5px;
+  }
+  .immersive .brand-light {
+    display: none;
+  }
+  .immersive .brand-symbol {
+    width: 25px;
+    height: 25px;
+  }
+  .immersive .global-search {
+    grid-row: 1;
+    grid-column: 2;
+    width: 100%;
+    padding: 8px 7px;
+    gap: 5px;
+  }
+  .immersive .global-search > svg {
+    width: 12px;
+    flex-shrink: 0;
+  }
+  .immersive .global-search,
+  .immersive .global-search:focus-within {
+    position: relative;
+    right: auto;
+    left: auto;
+    width: 100%;
+    height: 32px;
+    z-index: auto;
+    background: #fff7e509;
+    justify-content: flex-start;
+  }
+  .immersive .global-search input,
+  .immersive .global-search:focus-within input {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: auto;
+    opacity: 1;
+    font-size: 11px;
+    cursor: text;
+  }
+  .immersive .header-guide {
+    grid-row: 1;
+    grid-column: 3;
+  }
+  .immersive .header-about {
+    grid-row: 1;
+    grid-column: 4;
+    display: grid;
+  }
+  .immersive .view-nav {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    margin: 0;
+    justify-content: space-between;
+    width: 100%;
+    gap: 4px;
+  }
+  .immersive .view-nav a {
+    font-size: 10px;
+    padding: 7px 10px;
+    justify-content: center;
+    flex: 1;
+    gap: 6px;
+  }
+  .immersive .view-nav a svg {
+    width: 13px;
+    height: 13px;
+  }
+  .immersive .search-results {
+    position: fixed;
+    top: 64px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: calc(100dvh - 170px);
+    overflow: auto;
+  }
+  .immersive .intro {
+    top: 121px;
+    left: 20px;
+    width: calc(100% - 40px);
+  }
+  .immersive .intro-eyebrow {
+    font-size: 7px;
+    gap: 6px;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .immersive .intro-eyebrow > span:last-child {
+    display: none;
+  }
+  .immersive .intro-divider {
+    display: none;
+  }
+  .immersive .chapter-number {
+    font-size: 11px;
+  }
+  .immersive h1 {
+    font-size: 35px;
+    letter-spacing: -0.5px;
+  }
+  .immersive .intro > div > p {
+    display: none;
+  }
+  .overlay-switches {
+    top: 114px;
+    right: 16px;
+    gap: 5px;
+  }
+  .overlay-toggle {
+    font-size: 0;
+    padding: 7px 8px;
+    min-height: 28px;
+    gap: 4px;
+  }
+  .overlay-toggle > svg:last-child {
+    width: 9px;
+  }
+  .key-dots i {
+    height: 10px;
+  }
+  .immersive .explore-toolbar,
+  .immersive .question-legend {
+    right: 16px;
+    top: 151px;
+    width: min(310px, calc(100% - 32px));
+  }
+  .immersive .inspector {
+    top: auto;
+    bottom: 16px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: min(67dvh, 660px);
+    border-radius: 5px;
+  }
+  .immersive .inspector-peek {
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+  .inspector-peek > button {
+    padding: 11px 14px;
+  }
+  .inspector-peek h2 {
+    font-size: 23px;
+  }
+  .immersive .inspector-identity {
+    padding-top: 19px;
+  }
+  .immersive .shared-time {
+    bottom: 102px;
+    left: 16px;
+    width: calc(100% - 32px);
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  .immersive .shared-time > div > .eyebrow {
+    font-size: 7px;
+  }
+  .immersive .shared-time strong {
+    font-size: 18px;
+  }
+  .immersive .shared-time .year-input-wrap {
+    display: none;
+  }
+  .immersive .shared-time .icon-button {
+    width: 23px;
+    height: 28px;
+  }
+  .immersive .shared-year-slider small {
+    font-size: 8px;
+  }
+  .immersive .visual-panel .tl-lane-name {
+    font-size: 12px;
+  }
+  .immersive .visual-panel .tl-person-name {
+    font-size: 16px;
+  }
+  .immersive .modal {
+    padding: 24px;
+  }
+  .immersive .modal h2 {
+    font-size: 32px;
+  }
+  .immersive .modal-lead {
+    font-size: 19px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .immersive *,
+  .immersive *::before,
+  .immersive *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}

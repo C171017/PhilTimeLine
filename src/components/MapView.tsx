@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { geoNaturalEarth1, geoPath } from "d3-geo";
+import { geoGraticule10, geoNaturalEarth1, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
 import world from "world-atlas/countries-110m.json";
 import {
   ArrowUpRight,
   Check,
+  ChevronDown,
+  Compass,
   Globe2,
   Layers3,
   MapPin,
@@ -53,11 +55,12 @@ const countries = feature(
   topology,
   topology.objects.countries,
 ) as FeatureCollection<Geometry, GeoJsonProperties>;
-const landPaths = countries.features.map((country) => ({
-  id: String(country.id),
+const landPaths = countries.features.map((country, index) => ({
+  id: String(country.id ?? `unidentified-territory-${index}`),
   path: path(country) ?? "",
 }));
 const spherePath = path({ type: "Sphere" }) ?? "";
+const graticulePath = path(geoGraticule10()) ?? "";
 type MapCamera = { x: number; y: number; k: number };
 type Pin = {
   philosopher: Philosopher;
@@ -187,8 +190,24 @@ export default function MapView({
   onSelect,
   onYearChange,
 }: ViewProps) {
-  const [camera, setCamera] = useState<MapCamera>(WORLD_CAMERA);
+  const [camera, setCamera] = useState<MapCamera>(() => {
+    if (window.innerWidth > 700) return WORLD_CAMERA;
+    const thinker = philosophers.find((entry) => entry.id === selectedId);
+    const location = thinker ? locationAt(thinker, year) : undefined;
+    const center = projection(
+      location ? [location.lon, location.lat] : [14, 48],
+    )!;
+    const k = 2.8;
+    return { k, x: WIDTH / 2 - center[0] * k, y: HEIGHT / 2 - center[1] * k };
+  });
   const [showReach, setShowReach] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [mapBounds, setMapBounds] = useState({
+    x: 0,
+    y: 0,
+    width: WIDTH,
+    height: HEIGHT,
+  });
   const [playing, setPlaying] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -228,7 +247,7 @@ export default function MapView({
             : "Outside recorded activity";
   const selectedColor = selected
     ? laneFor(selected.questionLane).color
-    : "#658371";
+    : "#96733c";
   const living = philosophers.filter((philosopher) =>
     activeAt(philosopher, year),
   );
@@ -259,7 +278,7 @@ export default function MapView({
       const index = seen.get(key) ?? 0;
       seen.set(key, index + 1);
       const angle = (index - 1) * 2.4;
-      const radius = index === 0 ? 0 : 14 + Math.floor(index / 5) * 10;
+      const radius = index === 0 ? 0 : 28 + Math.floor(index / 5) * 14;
       return [
         {
           philosopher,
@@ -296,8 +315,20 @@ export default function MapView({
   useEffect(() => {
     const svg = mapRef.current;
     if (!svg) return;
-    const updateScale = () =>
-      setScreenScale(Math.max(0.001, Math.abs(svg.getScreenCTM()?.a ?? 1)));
+    const updateScale = () => {
+      const { width, height } = svg.getBoundingClientRect();
+      if (!width || !height) return;
+      const aspect = width / height;
+      const viewWidth = Math.max(WIDTH, HEIGHT * aspect);
+      const viewHeight = Math.max(HEIGHT, WIDTH / aspect);
+      setMapBounds({
+        x: (WIDTH - viewWidth) / 2,
+        y: (HEIGHT - viewHeight) / 2,
+        width: viewWidth,
+        height: viewHeight,
+      });
+      setScreenScale(width / viewWidth);
+    };
     updateScale();
     const observer = new ResizeObserver(updateScale);
     observer.observe(svg);
@@ -369,6 +400,24 @@ export default function MapView({
       y: HEIGHT / 2 - point[1] * 3.4,
     });
   }
+  function pinAtPointer(clientX: number, clientY: number, fallback: Pin) {
+    const svg = mapRef.current;
+    if (!svg) return fallback;
+    const point = mapPoint(svg, clientX, clientY);
+    const markerScale = 1 / (camera.k * screenScale);
+    let nearest = fallback;
+    let distance = Infinity;
+    for (const pin of pins) {
+      const x = camera.x + (pin.x + pin.offsetX * markerScale) * camera.k;
+      const y = camera.y + (pin.y + pin.offsetY * markerScale) * camera.k;
+      const candidate = Math.hypot(point.x - x, point.y - y);
+      if (candidate < distance) {
+        nearest = pin;
+        distance = candidate;
+      }
+    }
+    return nearest;
+  }
   function selectPin(pin: Pin) {
     setHoveredId(pin.philosopher.id);
     onSelect(pin.philosopher.id);
@@ -382,7 +431,10 @@ export default function MapView({
   }
 
   return (
-    <section className="mp-view" aria-label="Philosopher map">
+    <section
+      className={`mp-view ${notesOpen ? "has-open-notes" : ""}`}
+      aria-label="Philosopher map"
+    >
       <div className="mp-heading">
         <div>
           <div className="mp-eyebrow">A GEOGRAPHY OF THOUGHT</div>
@@ -396,7 +448,10 @@ export default function MapView({
             className={
               showReach ? "mp-reach-button is-active" : "mp-reach-button"
             }
-            onClick={() => setShowReach(!showReach)}
+            onClick={() => {
+              setShowReach(!showReach);
+              if (!showReach) setNotesOpen(true);
+            }}
             aria-pressed={showReach}
           >
             <Layers3 size={15} /> Ideas’ reach{" "}
@@ -425,7 +480,7 @@ export default function MapView({
               World
             </button>
             <button
-              className={camera.k > 1 ? "is-active" : ""}
+              className={camera.k === 3.4 ? "is-active" : ""}
               onClick={focusEurope}
             >
               Europe
@@ -435,7 +490,7 @@ export default function MapView({
         <svg
           ref={mapRef}
           className="mp-map"
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          viewBox={`${mapBounds.x} ${mapBounds.y} ${mapBounds.width} ${mapBounds.height}`}
           role="group"
           aria-label={`World map of documented philosopher locations in ${formatYear(year)}. ${pins.length} located, ${unknownCount} living philosophers with unknown location.`}
           onPointerDown={(event) => {
@@ -520,23 +575,44 @@ export default function MapView({
               height="13"
               patternUnits="userSpaceOnUse"
             >
-              <circle cx="1" cy="1" r="0.6" fill="#90a7a1" opacity="0.2" />
+              <circle cx="1" cy="1" r="0.6" fill="#8b7756" opacity="0.16" />
             </pattern>
             <clipPath id="mp-world-clip">
               <path d={spherePath} />
             </clipPath>
           </defs>
-          <rect width={WIDTH} height={HEIGHT} fill="#edf2ef" />
-          <rect width={WIDTH} height={HEIGHT} fill="url(#mp-ocean-dots)" />
+          <rect
+            x={mapBounds.x}
+            y={mapBounds.y}
+            width={mapBounds.width}
+            height={mapBounds.height}
+            fill="#e7dcc3"
+          />
+          <rect
+            x={mapBounds.x}
+            y={mapBounds.y}
+            width={mapBounds.width}
+            height={mapBounds.height}
+            fill="url(#mp-ocean-dots)"
+          />
           <g
             className="mp-camera"
             transform={`translate(${camera.x} ${camera.y}) scale(${camera.k})`}
           >
             <path
               d={spherePath}
-              fill="#eef3f0"
-              stroke="#d9e3de"
+              fill="#ded8bf"
+              stroke="#ac9570"
               strokeWidth={0.7 / camera.k}
+            />
+            <path
+              className="mp-graticule"
+              d={graticulePath}
+              fill="none"
+              stroke="#9a8662"
+              strokeOpacity="0.23"
+              strokeWidth={0.45 / camera.k}
+              aria-hidden="true"
             />
             <g className="mp-land">
               {landPaths.map((country) => (
@@ -629,7 +705,7 @@ export default function MapView({
                       cx={x}
                       cy={y}
                       r={3 / camera.k}
-                      fill="#fafcf8"
+                      fill="#f5ebd8"
                       stroke={selectedColor}
                       strokeWidth={1.2 / camera.k}
                     >
@@ -644,10 +720,11 @@ export default function MapView({
             {sortedPins.map((pin) => {
               const isSelected = pin.philosopher.id === selectedId;
               const color = laneFor(pin.philosopher.questionLane).color;
-              const x = pin.x + pin.offsetX / camera.k;
-              const y = pin.y + pin.offsetY / camera.k;
+              const markerScale = 1 / (camera.k * screenScale);
+              const x = pin.x + pin.offsetX * markerScale;
+              const y = pin.y + pin.offsetY * markerScale;
               const labelLeft = camera.x + x * camera.k > WIDTH * 0.63;
-              const labelScale = 1 / (camera.k * screenScale);
+              const labelScale = markerScale;
               return (
                 <g
                   key={pin.philosopher.id}
@@ -657,14 +734,27 @@ export default function MapView({
                   tabIndex={0}
                   aria-label={`${pin.philosopher.name}, ${pin.location.city}, ${pin.location.country}, ${periodLabel(pin.location)}. Approximate city coordinate: latitude ${pin.location.lat}, longitude ${pin.location.lon}. ${pin.location.note}`}
                   aria-pressed={isSelected}
-                  onClick={() => selectPin(pin)}
+                  onClick={(event) =>
+                    selectPin(pinAtPointer(event.clientX, event.clientY, pin))
+                  }
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
                       selectPin(pin);
                     }
                   }}
-                  onMouseEnter={() => setHoveredId(pin.philosopher.id)}
+                  onMouseEnter={(event) =>
+                    setHoveredId(
+                      pinAtPointer(event.clientX, event.clientY, pin)
+                        .philosopher.id,
+                    )
+                  }
+                  onMouseMove={(event) =>
+                    setHoveredId(
+                      pinAtPointer(event.clientX, event.clientY, pin)
+                        .philosopher.id,
+                    )
+                  }
                   onMouseLeave={() => setHoveredId(null)}
                   onFocus={() => setHoveredId(pin.philosopher.id)}
                   onBlur={() => setHoveredId(null)}
@@ -676,7 +766,7 @@ export default function MapView({
                       x2={x}
                       y2={y}
                       stroke={color}
-                      strokeWidth={0.85 / camera.k}
+                      strokeWidth={0.85 * markerScale}
                       opacity="0.7"
                     />
                   )}
@@ -684,20 +774,25 @@ export default function MapView({
                     className="mp-pin-halo"
                     cx={x}
                     cy={y}
-                    r={(isSelected ? 15 : 11) / camera.k}
+                    r={(isSelected ? 15 : 11) * markerScale}
                     fill={color}
                     fillOpacity={isSelected ? 0.15 : 0}
                   />
                   <circle
                     cx={x}
                     cy={y}
-                    r={(isSelected ? 6.5 : 5) / camera.k}
+                    r={(isSelected ? 6.5 : 5) * markerScale}
                     fill={color}
                     stroke="#fffef9"
-                    strokeWidth={2 / camera.k}
+                    strokeWidth={2 * markerScale}
                   />
-                  <circle cx={x} cy={y} r={1.5 / camera.k} fill="#fffef9" />
-                  <circle cx={x} cy={y} r={12 / camera.k} fill="transparent" />
+                  <circle cx={x} cy={y} r={1.5 * markerScale} fill="#fffef9" />
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={22 * markerScale}
+                    fill="transparent"
+                  />
                   {isSelected && (
                     <g
                       className="mp-selected-caption"
@@ -760,7 +855,7 @@ export default function MapView({
               <span>
                 {unmappedReach.length}{" "}
                 {unmappedReach.length === 1 ? "region has" : "regions have"} no
-                mapped extent; see reception notes below.
+                mapped extent; see the field notes.
               </span>
             )}
           </div>
@@ -799,48 +894,6 @@ export default function MapView({
             : "Locations show recorded periods; dates may be approximate."}
         </span>
       </div>
-      {showReach && selected && reception.length > 0 && (
-        <div
-          className="mp-reception-details"
-          role="region"
-          aria-label="Reception notes"
-        >
-          <div className="mp-reception-heading">
-            <Layers3 size={13} />
-            <strong>Reception at {formatYear(year)}</strong>
-            <span>Editorial windows · qualitative, not measured</span>
-          </div>
-          <div className="mp-reception-cards">
-            {reception.map(({ region, shape, global }, index) => (
-              <article key={`${region.region}-${index}`}>
-                <div className="mp-reception-card-title">
-                  <strong>
-                    {global
-                      ? "Global reception"
-                      : (shape?.name ?? region.region)}
-                  </strong>
-                  <span>
-                    {formatYear(region.startYear)}–{formatYear(region.endYear)}
-                  </span>
-                </div>
-                <p>{region.note}</p>
-                <div className="mp-reception-card-meta">
-                  <span>Editorial confidence: {region.confidence}</span>
-                  <span>
-                    {global
-                      ? "No uniform geographic extent"
-                      : !shape
-                        ? "Extent unavailable · omitted from map"
-                        : shape.point
-                          ? "Approximate region marker"
-                          : "Schematic region extent"}
-                  </span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
       <div className="mp-time-control">
         <button
           className={playing ? "is-playing" : ""}
@@ -878,59 +931,119 @@ export default function MapView({
           </div>
         </div>
       </div>
-      {selected ? (
-        <div className="mp-journey">
-          <div className="mp-journey-heading">
-            <div>
-              <Route size={15} />
-              <strong>{selected.name}’s journey</strong>
-            </div>
-            <span>{journeyStatus}</span>
-          </div>
-          {stops.length ? (
-            <div className="mp-journey-stops">
-              {stops.map((stop, index) => (
-                <button
-                  key={`${stop.city}-${index}`}
-                  className={
-                    stop === currentLocation
-                      ? "is-current"
-                      : stop.startYear > year
-                        ? "is-future"
-                        : ""
-                  }
-                  onClick={() => onYearChange(clampYear(stop.startYear))}
-                  title={stop.note}
-                >
-                  <span className="mp-stop-index">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <div>
-                    <strong>{stop.city}</strong>
-                    <span>{periodLabel(stop)}</span>
-                  </div>
-                  <ArrowUpRight size={13} />
-                </button>
-              ))}
+      <details
+        className="mp-field-notes"
+        open={notesOpen}
+        onToggle={(event) => setNotesOpen(event.currentTarget.open)}
+      >
+        <summary>
+          <Compass size={17} />
+          <span>
+            Field notes
+            <small>{selected ? selected.name : "Lives & reception"}</small>
+          </span>
+          <ChevronDown size={15} />
+        </summary>
+        <div className="mp-notes-body">
+          {selected ? (
+            <div className="mp-journey">
+              <div className="mp-journey-heading">
+                <div>
+                  <Route size={15} />
+                  <strong>{selected.name}’s journey</strong>
+                </div>
+                <span>{journeyStatus}</span>
+              </div>
+              {stops.length ? (
+                <div className="mp-journey-stops">
+                  {stops.map((stop, index) => (
+                    <button
+                      key={`${stop.city}-${index}`}
+                      className={
+                        stop === currentLocation
+                          ? "is-current"
+                          : stop.startYear > year
+                            ? "is-future"
+                            : ""
+                      }
+                      onClick={() => onYearChange(clampYear(stop.startYear))}
+                      title={stop.note}
+                    >
+                      <span className="mp-stop-index">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <div>
+                        <strong>{stop.city}</strong>
+                        <span>{periodLabel(stop)}</span>
+                        <p className="mp-stop-note">{stop.note}</p>
+                      </div>
+                      <ArrowUpRight size={13} />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="mp-no-stops">
+                  No source-supported location periods are included for this
+                  philosopher.
+                </p>
+              )}
+              <p className="mp-journey-note">
+                Routes connect documented stops schematically; they do not
+                reconstruct a precise travel path.
+              </p>
             </div>
           ) : (
-            <p className="mp-no-stops">
-              No source-supported location periods are included for this
-              philosopher.
-            </p>
+            <div className="mp-select-prompt">
+              <MapPin size={16} />
+              <span>Select a place to trace a philosopher’s journey.</span>
+              <span className="mp-prompt-arrow">↗</span>
+            </div>
           )}
-          <p className="mp-journey-note">
-            Routes connect documented stops schematically; they do not
-            reconstruct a precise travel path.
-          </p>
+          {showReach && selected && reception.length > 0 && (
+            <div
+              className="mp-reception-details"
+              role="region"
+              aria-label="Reception notes"
+            >
+              <div className="mp-reception-heading">
+                <Layers3 size={13} />
+                <strong>Reception at {formatYear(year)}</strong>
+                <span>Editorial windows · qualitative, not measured</span>
+              </div>
+              <div className="mp-reception-cards">
+                {reception.map(({ region, shape, global }, index) => (
+                  <article key={`${region.region}-${index}`}>
+                    <div className="mp-reception-card-title">
+                      <strong>
+                        {global
+                          ? "Global reception"
+                          : (shape?.name ?? region.region)}
+                      </strong>
+                      <span>
+                        {formatYear(region.startYear)}–
+                        {formatYear(region.endYear)}
+                      </span>
+                    </div>
+                    <p>{region.note}</p>
+                    <div className="mp-reception-card-meta">
+                      <span>Editorial confidence: {region.confidence}</span>
+                      <span>
+                        {global
+                          ? "No uniform geographic extent"
+                          : !shape
+                            ? "Extent unavailable · omitted from map"
+                            : shape.point
+                              ? "Approximate region marker"
+                              : "Schematic region extent"}
+                      </span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="mp-select-prompt">
-          <MapPin size={16} />
-          <span>Select a place to trace a philosopher’s journey.</span>
-          <span className="mp-prompt-arrow">↗</span>
-        </div>
-      )}
+      </details>
     </section>
   );
 }

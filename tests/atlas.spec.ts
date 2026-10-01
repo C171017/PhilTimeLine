@@ -1,5 +1,16 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+
+async function expandInspector(page: Page) {
+  const peek = page.getByRole("button", { name: /^Read about / });
+  if (await peek.isVisible()) await peek.click();
+}
+
+async function openFieldNotes(page: Page) {
+  const notes = page.locator(".mp-field-notes");
+  if (!(await notes.evaluate((node) => (node as HTMLDetailsElement).open)))
+    await notes.locator("summary").click();
+}
 
 test("shared selection and year survive navigation, reload, and browser history", async ({
   page,
@@ -84,6 +95,10 @@ test("selecting a work exposes its philosopher and dated publication", async ({
       .getByRole("heading", { name: "René Descartes" }),
   ).toBeVisible();
   await expect(page).toHaveURL(/year=1641/);
+  await expect(
+    page.getByRole("button", { name: "Read about René Descartes" }),
+  ).toBeVisible();
+  await expandInspector(page);
   await page.getByRole("tab", { name: "Works & sources" }).click();
   await expect(page.getByRole("tabpanel")).toContainText("Meditations");
   await expect(
@@ -120,6 +135,7 @@ test("map separates living location from posthumous reception", async ({
   page,
 }) => {
   await page.goto("/map?year=1781&thinker=kant");
+  await expandInspector(page);
   await expect(
     page.locator(".mp-pin").filter({ hasText: "Immanuel Kant" }),
   ).toHaveCount(1);
@@ -201,6 +217,7 @@ test("idea comparison exposes the reasons behind all three axes", async ({
     "not evidence of influence",
   );
   await page.getByLabel("Color points by").selectOption("reality");
+  await page.locator(".is-color-key > summary").click();
   await expect(page.locator(".is-gradient-key")).toContainText("Mind");
   await expect(comparison).toBeVisible();
 });
@@ -221,6 +238,7 @@ test("search finds works, and global/question filters change the actual plotted 
   ).toBeVisible();
   await expect(page).toHaveURL(/thinker=plato/);
   const allCount = await page.locator(".is-point").count();
+  await page.getByRole("button", { name: /^Filters/ }).click();
   await page.getByLabel("Filter traditions").selectOption("global");
   expect(await page.locator(".is-point").count()).toBeLessThan(allCount);
   await page
@@ -234,6 +252,7 @@ test("uncertain biography and missing authored works remain explicit", async ({
   page,
 }) => {
   await page.goto("/timeline?thinker=socrates&year=-420");
+  await expandInspector(page);
   await expect(page.getByTestId("inspector")).toContainText(
     "No surviving authored works",
   );
@@ -248,9 +267,12 @@ test("uncertain biography and missing authored works remain explicit", async ({
     .click();
   // The later composite text is not dated to the conventionally attributed life.
   await page.goto("/map?thinker=laozi&year=-550");
+  await expandInspector(page);
   await expect(page.getByTestId("inspector")).toContainText(
     "Location not documented",
   );
+  await page.getByRole("button", { name: "Close philosopher details" }).click();
+  await openFieldNotes(page);
   await expect(page.locator(".mp-journey")).toContainText(
     "No source-supported location periods",
   );
@@ -318,10 +340,13 @@ test("unknown ancient lifespans remain activity records rather than living figur
     page.getByTestId("inspector").locator(".life-dates"),
   ).toContainText("fl. c. 500 BCE");
   await page.goto("/map?thinker=heraclitus&year=2026");
+  await expandInspector(page);
   await expect(page.locator(".mp-pin.is-selected")).toHaveCount(0);
   await expect(page.getByTestId("inspector")).toContainText(
     "Outside recorded activity",
   );
+  await page.getByRole("button", { name: "Close philosopher details" }).click();
+  await openFieldNotes(page);
   await expect(page.locator(".mp-journey")).toContainText(
     "Beyond recorded activity",
   );
@@ -348,5 +373,91 @@ test("all views have no detectable WCAG A or AA violations in their default read
       result.violations,
       `${view}: ${JSON.stringify(result.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })))}`,
     ).toEqual([]);
+  }
+});
+
+test("overlays expand without resizing the full viewport exploration", async ({
+  page,
+}) => {
+  for (const view of ["timeline", "map", "ideas"]) {
+    await page.goto(`/${view}?year=1781&thinker=kant`);
+    const stage = page.locator(
+      view === "timeline"
+        ? ".tl-canvas-wrap"
+        : view === "map"
+          ? ".mp-map"
+          : ".is-canvas",
+    );
+    await stage.waitFor();
+    const before = await stage.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(before!.x).toBeCloseTo(0, 0);
+    expect(before!.y).toBeCloseTo(0, 0);
+    expect(before!.width).toBeCloseTo(viewport.width, 0);
+    expect(before!.height).toBeCloseTo(viewport.height, 0);
+    if (view === "timeline") {
+      await stage.evaluate((node) => {
+        node.scrollTop = node.scrollHeight;
+      });
+      await expect(page.locator(".intro")).toHaveCSS("opacity", "0");
+      await expect(
+        page.locator(".tl-lane-name").filter({ hasText: "Meaning" }),
+      ).toBeInViewport();
+      await expect(page).toHaveURL(/year=1781&thinker=kant/);
+      await stage.evaluate((node) => {
+        node.scrollTop = 0;
+      });
+      await expect(page.locator(".intro")).toHaveCSS("opacity", "1");
+    }
+    await expect(
+      page.getByRole("button", { name: "Read about Immanuel Kant" }),
+    ).toBeVisible();
+    await expandInspector(page);
+    await expect(
+      page.getByRole("tab", { name: "Works & sources" }),
+    ).toBeVisible();
+    expect(await stage.boundingBox()).toEqual(before);
+    await page
+      .getByRole("button", { name: "Close philosopher details" })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Read about Immanuel Kant" }),
+    ).toBeFocused();
+    await expect(page).toHaveURL(/year=1781&thinker=kant/);
+    await page.getByRole("button", { name: /^Filters/ }).click();
+    await expect(page.getByLabel("Filter traditions")).toBeVisible();
+    expect(await stage.boundingBox()).toEqual(before);
+    await page.keyboard.press("Escape");
+    await expect(page.getByLabel("Filter traditions")).toBeHidden();
+    await page.getByRole("button", { name: /The questions/ }).click();
+    await expect(page.locator("#atlas-question-key")).toContainText(
+      "What can we know?",
+    );
+    expect(await stage.boundingBox()).toEqual(before);
+    await page.getByRole("button", { name: "Close question key" }).click();
+  }
+});
+
+test("expanded reading overlays are accessible and keyboard dismissible", async ({
+  page,
+}) => {
+  for (const view of ["timeline", "map", "ideas"]) {
+    await page.goto(`/${view}?thinker=kant&year=1781`);
+    await expandInspector(page);
+    await page.getByRole("tab", { name: "Works & sources" }).click();
+    await expect(page.getByRole("tabpanel")).toContainText(
+      "Critique of Pure Reason",
+    );
+    const result = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa"])
+      .analyze();
+    expect(
+      result.violations,
+      `${view}: ${JSON.stringify(result.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })))}`,
+    ).toEqual([]);
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("button", { name: "Read about Immanuel Kant" }),
+    ).toBeFocused();
   }
 });

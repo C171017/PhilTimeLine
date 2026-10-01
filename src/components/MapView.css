@@ -820,3 +820,503 @@
 .mp-selected-caption {
   pointer-events: none;
 }
+
+/* The atlas is the room; its controls are small objects placed above it. */
+.immersive .mp-view {
+  padding: 0;
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  overflow: hidden;
+  color: #453323;
+}
+.immersive .mp-heading {
+  display: contents;
+}
+.immersive .mp-heading > div:first-child {
+  display: none;
+}
+.immersive .mp-layer-options {
+  position: absolute;
+  top: 150px;
+  right: 24px;
+  z-index: 12;
+  align-items: flex-end;
+}
+.immersive .mp-layer-options > span {
+  color: #705e46;
+}
+.immersive .mp-reach-button {
+  border: 1px solid #b8a17b;
+  border-radius: 3px;
+  background: #f6efdfed;
+  color: #60482b;
+  box-shadow: 0 3px 15px #4f35140a;
+}
+.immersive .mp-reach-button.is-active {
+  background: #e8d9b5;
+  border-color: #9b7c45;
+  color: #4a341c;
+}
+.immersive .mp-reach-button:hover {
+  border-color: #80643d;
+}
+.immersive .mp-map-card {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+}
+.immersive .mp-map {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  min-height: 0;
+}
+.immersive .mp-map > rect:first-of-type {
+  fill-opacity: 0.9;
+}
+.immersive .mp-land path {
+  fill: #eee3ca;
+  stroke: #a8926d;
+}
+.immersive .mp-geographic-labels {
+  font-family: Georgia, "Times New Roman", serif;
+  fill: #8c7958;
+  letter-spacing: 2.6px;
+}
+.immersive .mp-selected-label {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: 15px;
+  fill: #413123;
+  stroke: #f2e7d1;
+}
+.immersive .mp-selected-city {
+  fill: #685339;
+  stroke: #f2e7d1;
+}
+.immersive .mp-region-name {
+  stroke: #eee3ca;
+}
+.immersive .mp-map-topline {
+  top: 213px;
+  left: 32px;
+  right: auto;
+  width: 350px;
+  display: block;
+}
+.immersive .mp-snapshot {
+  color: #6b5639;
+  letter-spacing: 1.25px;
+}
+.immersive .mp-snapshot strong,
+.immersive .mp-snapshot > span:last-child {
+  color: #594329;
+}
+.immersive .mp-live-dot {
+  background: #96743a;
+}
+.immersive .mp-snapshot-divider {
+  border-color: #baa27c;
+}
+.immersive .mp-view-options {
+  position: absolute;
+  top: 77px;
+  left: 0;
+  border: 1px solid #baa580;
+  border-radius: 3px;
+  background: #f4ebd8ed;
+  width: max-content;
+}
+.immersive .mp-view-options button {
+  color: #644d31;
+  border-radius: 2px;
+  font-size: 10px;
+  padding: 6px 12px;
+}
+.immersive .mp-view-options button.is-active {
+  background: #e3d3b0;
+  color: #49351f;
+}
+.immersive .mp-map-caption {
+  position: absolute;
+  left: 32px;
+  top: 234px;
+  z-index: 3;
+  width: 350px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  color: #6b583f;
+  pointer-events: none;
+}
+.immersive .mp-map-controls {
+  left: 32px;
+  right: auto;
+  top: 50%;
+  bottom: auto;
+  z-index: 5;
+  border: 1px solid #bca783;
+  border-radius: 3px;
+  background: #f6eddbeb;
+  box-shadow: 0 4px 15px #53392010;
+}
+.immersive .mp-view.has-open-notes .mp-map-controls {
+  left: 388px;
+}
+.immersive .mp-map-controls button {
+  width: 35px;
+  height: 35px;
+  color: #675031;
+}
+.immersive .mp-map-controls button + button {
+  border-color: #d9c7a6;
+}
+.immersive .mp-map-controls button:hover {
+  background: #e7d7b6;
+}
+.immersive .mp-map-bottomline {
+  bottom: 103px;
+  left: 32px;
+  right: 32px;
+  color: #735f42;
+}
+.immersive .mp-small-pin {
+  background: #9b7743;
+  outline-color: #f3e8d1;
+}
+.immersive .mp-dotted-line {
+  border-color: #8a7046;
+}
+.immersive .mp-map-tooltip {
+  left: 83px;
+  top: 335px;
+  width: 255px;
+  border: 1px solid #bca783;
+  border-radius: 3px;
+  background: #f7efddf5;
+  box-shadow: 0 7px 25px #60421a14;
+  color: #453323;
+}
+.immersive .mp-tooltip-kicker,
+.immersive .mp-map-tooltip > span:not(.mp-tooltip-kicker),
+.immersive .mp-map-tooltip p {
+  color: #705a3b;
+}
+.immersive .mp-map-empty {
+  background: #f4ead6e8;
+  border-color: #bfa77d;
+  border-radius: 3px;
+  color: #6b5436;
+}
+.immersive .mp-map-empty strong {
+  color: #584126;
+}
+.immersive .mp-reach-empty {
+  top: 335px;
+  left: 83px;
+  bottom: auto;
+  max-width: 260px;
+  color: #624d31;
+  border-color: #bba37d;
+  border-radius: 3px;
+  background: #f5ecdaeb;
+  line-height: 1.5;
+}
+.immersive .mp-time-control {
+  position: absolute;
+  left: 32px;
+  bottom: 24px;
+  z-index: 12;
+  width: min(650px, calc(100% - 448px));
+  min-height: 63px;
+  box-sizing: border-box;
+  gap: 15px;
+  margin: 0;
+  padding: 12px 17px;
+  border: 1px solid #b9a17b;
+  border-radius: 4px;
+  background: #f7efdeed;
+  box-shadow: 0 8px 30px #51361912;
+  backdrop-filter: blur(12px);
+}
+.immersive .mp-time-control > button {
+  width: 34px;
+  height: 34px;
+  color: #684c27;
+  background: #ebdec3;
+  border-color: #bca378;
+}
+.immersive .mp-time-control > button.is-playing {
+  background: #d9bd83;
+}
+.immersive .mp-time-label > span,
+.immersive .mp-time-slider > div {
+  color: #6b5539;
+}
+.immersive .mp-time-label > strong {
+  color: #493622;
+}
+.immersive .mp-time-slider input {
+  background: linear-gradient(
+    to right,
+    #96713b 0%,
+    #96713b var(--mp-time-progress),
+    #d7c6a7 var(--mp-time-progress),
+    #d7c6a7 100%
+  );
+  accent-color: #96713b;
+}
+.immersive .mp-time-slider input::-webkit-slider-thumb {
+  background: #96713b;
+  border-color: #f6edd9;
+  box-shadow: 0 0 0 1px #a68b5b;
+}
+.immersive .mp-time-slider input::-moz-range-thumb {
+  background: #96713b;
+  border-color: #f6edd9;
+  box-shadow: 0 0 0 1px #a68b5b;
+}
+.immersive .mp-field-notes {
+  position: absolute;
+  z-index: 11;
+  left: 32px;
+  bottom: 127px;
+  width: 340px;
+  border: 1px solid #baa17a;
+  border-radius: 4px;
+  background: #f8efdeed;
+  box-shadow: 0 8px 32px #54381714;
+  backdrop-filter: blur(12px);
+}
+.immersive .mp-field-notes summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  cursor: pointer;
+  color: #5a4126;
+  list-style: none;
+  font-size: 11px;
+}
+.immersive .mp-field-notes summary::-webkit-details-marker {
+  display: none;
+}
+.immersive .mp-field-notes summary > span {
+  flex: 1;
+}
+.immersive .mp-field-notes summary small {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  margin-top: 3px;
+  color: #766043;
+}
+.immersive .mp-field-notes[open] summary {
+  border-bottom: 1px solid #d1bb94;
+}
+.immersive .mp-field-notes[open] summary > svg:last-child {
+  transform: rotate(180deg);
+}
+.immersive .mp-notes-body {
+  max-height: min(390px, calc(100dvh - 460px));
+  overflow-y: auto;
+  padding: 15px;
+  scrollbar-width: thin;
+  scrollbar-color: #b49b74 transparent;
+}
+.immersive .mp-journey {
+  margin: 0;
+}
+.immersive .mp-journey-heading {
+  display: block;
+}
+.immersive .mp-journey-heading > div,
+.immersive .mp-journey-heading strong,
+.immersive .mp-journey-heading > span {
+  color: #624c30;
+}
+.immersive .mp-journey-heading > span {
+  display: block;
+  margin: 7px 0 14px;
+  max-width: none;
+  text-align: left;
+  line-height: 1.5;
+}
+.immersive .mp-journey-stops {
+  display: grid;
+  gap: 7px;
+  overflow: visible;
+}
+.immersive .mp-journey-stops > button {
+  background: #f7efde;
+  border-color: #d2bc96;
+  border-radius: 3px;
+  align-items: flex-start;
+  color: #684d2d;
+}
+.immersive .mp-journey-stops > button.is-current {
+  background: #eaddbf;
+  border-color: #a48753;
+}
+.immersive .mp-journey-stops > button:hover {
+  border-color: #947345;
+}
+.immersive .mp-stop-index,
+.immersive .mp-journey-stops strong,
+.immersive .mp-journey-stops > button > div > span {
+  color: #60492e;
+}
+.immersive .mp-stop-note {
+  font-size: 10px;
+  color: #705b3e;
+  line-height: 1.6;
+  margin: 2px 0 0;
+}
+.immersive .mp-journey-note,
+.immersive .mp-no-stops {
+  color: #745e40;
+  font-size: 10px;
+}
+.immersive .mp-reception-details {
+  padding: 17px 0 0;
+  margin: 17px 0 0;
+  border: 0;
+  border-top: 1px solid #d0ba94;
+  border-radius: 0;
+  background: transparent;
+}
+.immersive .mp-reception-heading {
+  flex-wrap: wrap;
+  color: #6b4d2a;
+}
+.immersive .mp-reception-heading strong,
+.immersive .mp-reception-heading > span {
+  color: #6b5234;
+}
+.immersive .mp-reception-heading > span {
+  width: 100%;
+  margin-left: 20px;
+}
+.immersive .mp-reception-cards {
+  grid-template-columns: 1fr;
+}
+.immersive .mp-reception-cards article {
+  border-color: #d7c3a1;
+}
+.immersive .mp-reception-card-title strong,
+.immersive .mp-reception-card-title > span,
+.immersive .mp-reception-cards p,
+.immersive .mp-reception-card-meta {
+  color: #6c5435;
+}
+.immersive .mp-reception-card-meta {
+  flex-direction: column;
+  gap: 2px;
+}
+.immersive .mp-select-prompt {
+  margin: 0;
+  padding: 6px 0;
+  border: 0;
+  color: #6b5335;
+  line-height: 1.6;
+}
+.immersive .mp-view button:focus-visible,
+.immersive .mp-time-slider input:focus-visible,
+.immersive .mp-field-notes summary:focus-visible {
+  outline: 2px solid #846233;
+  outline-offset: 3px;
+}
+@media (max-width: 800px) {
+  .immersive .mp-layer-options {
+    top: 155px;
+    right: 16px;
+  }
+  .immersive .mp-map-topline {
+    left: 16px;
+    top: 219px;
+    width: 260px;
+  }
+  .immersive .mp-snapshot > span:last-child,
+  .immersive .mp-snapshot-divider {
+    display: none;
+  }
+  .immersive .mp-map-caption {
+    left: 16px;
+    top: 239px;
+    width: 250px;
+    font-size: 8px;
+  }
+  .immersive .mp-map-caption > span {
+    max-width: none;
+    text-align: left;
+  }
+  .immersive .mp-view-options {
+    top: 74px;
+  }
+  .immersive .mp-map-controls {
+    left: 16px;
+    top: 47%;
+  }
+  .immersive .mp-view.has-open-notes .mp-map-controls {
+    top: 203px;
+    left: auto;
+    right: 16px;
+    flex-direction: row;
+  }
+  .immersive .mp-view.has-open-notes .mp-map-controls button {
+    width: 31px;
+    height: 31px;
+  }
+  .immersive .mp-view.has-open-notes .mp-map-controls button + button {
+    border-top: 0;
+    border-left: 1px solid #d9c7a6;
+  }
+  .immersive .mp-map-tooltip {
+    left: 60px;
+    top: 332px;
+    width: min(235px, calc(100vw - 94px));
+  }
+  .immersive .mp-reach-empty {
+    top: 332px;
+    left: 60px;
+    max-width: min(230px, calc(100vw - 97px));
+  }
+  .immersive .mp-time-control {
+    bottom: 103px;
+    left: 16px;
+    width: calc(100% - 32px);
+    gap: 10px;
+    padding: 11px 12px;
+  }
+  .immersive .mp-time-label {
+    min-width: 88px;
+  }
+  .immersive .mp-time-label > span {
+    font-size: 6px;
+  }
+  .immersive .mp-time-label > strong {
+    font-size: 18px;
+  }
+  .immersive .mp-field-notes {
+    bottom: 181px;
+    left: 16px;
+    width: min(340px, calc(100% - 32px));
+  }
+  .immersive .mp-notes-body {
+    max-height: max(130px, min(310px, calc(100dvh - 480px)));
+  }
+  .immersive .mp-map-bottomline {
+    bottom: 89px;
+    left: 16px;
+    right: 16px;
+    font-size: 7px;
+  }
+  .immersive .mp-map-bottomline > span:last-child {
+    max-width: none;
+  }
+}

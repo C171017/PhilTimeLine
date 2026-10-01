@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
@@ -25,8 +25,6 @@ type Camera = { yaw: number; pitch: number; zoom: number };
 type Projected = { x: number; y: number; depth: number; perspective: number };
 type PointChoice = { ids: string[]; x: number; y: number; coincident: boolean };
 const DEFAULT_CAMERA: Camera = { yaw: -0.61, pitch: 0.38, zoom: 1 };
-const WIDTH = 960;
-const HEIGHT = 540;
 const AXES: {
   id: Lens;
   name: string;
@@ -69,16 +67,24 @@ const scaleVector = (v: Vec3, amount: number): Vec3 => [
   v[2] * amount,
 ];
 
-function project(v: Vec3, camera: Camera): Projected {
+function projectVector(
+  v: Vec3,
+  camera: Camera,
+  frame: { width: number; height: number; compact: boolean },
+): Projected {
   const x = v[0] * Math.cos(camera.yaw) + v[2] * Math.sin(camera.yaw);
   const z = -v[0] * Math.sin(camera.yaw) + v[2] * Math.cos(camera.yaw);
   const y = v[1] * Math.cos(camera.pitch) - z * Math.sin(camera.pitch);
   const depth = v[1] * Math.sin(camera.pitch) + z * Math.cos(camera.pitch);
   const perspective = 5.5 / (5.5 - depth);
-  const size = 137 * camera.zoom * perspective;
+  const radius = Math.min(
+    frame.width * (frame.compact ? 0.28 : 0.27),
+    Math.max(140, frame.height - (frame.compact ? 420 : 260)) * 0.34,
+  );
+  const size = radius * camera.zoom * perspective;
   return {
-    x: WIDTH / 2 + x * size,
-    y: HEIGHT / 2 - y * size,
+    x: frame.width / 2 + x * size,
+    y: frame.height / 2 + (frame.compact ? 32 : 50) - y * size,
     depth,
     perspective,
   };
@@ -130,7 +136,15 @@ export default function IdeasView({
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [comparing, setComparing] = useState(false);
-  const [compact, setCompact] = useState(false);
+  const [stageSize, setStageSize] = useState({ width: 960, height: 540 });
+  const compact = stageSize.width < 560;
+  const WIDTH = stageSize.width;
+  const HEIGHT = stageSize.height;
+  const project = useCallback(
+    (v: Vec3, c: Camera) =>
+      projectVector(v, c, { width: WIDTH, height: HEIGHT, compact }),
+    [WIDTH, HEIGHT, compact],
+  );
   const [comparisonId, setComparisonId] = useState("");
   const [pointChoice, setPointChoice] = useState<PointChoice | null>(null);
   const drag = useRef<{
@@ -142,6 +156,7 @@ export default function IdeasView({
   } | null>(null);
   const canvas = useRef<SVGSVGElement>(null);
   const chooser = useRef<HTMLDivElement>(null);
+  const compareToggle = useRef<HTMLButtonElement>(null);
   const suppressClick = useRef(false);
   const pointerPosition = useRef<{ x: number; y: number } | null>(null);
   const visible = useMemo(
@@ -153,7 +168,7 @@ export default function IdeasView({
       visible
         .map((p) => ({ p, ...project(vector(p), camera) }))
         .sort((a, b) => a.depth - b.depth),
-    [visible, camera],
+    [visible, camera, project],
   );
   const selected = philosophers.find((p) => p.id === selectedId);
   const hovered = philosophers.find((p) => p.id === hoveredId);
@@ -172,7 +187,7 @@ export default function IdeasView({
   const pointColor = (p: Philosopher) =>
     colorMode === "question"
       ? laneFor(p.questionLane).color
-      : `hsl(${222 + (p.coordinates.reality + 1) * 34}, 38%, 48%)`;
+      : `hsl(${24 + (p.coordinates.reality + 1) * 10}, 42%, ${38 + (p.coordinates.reality + 1) * 7}%)`;
 
   useEffect(() => {
     const element = canvas.current;
@@ -192,9 +207,10 @@ export default function IdeasView({
       }));
     };
     element.addEventListener("wheel", zoom, { passive: false });
-    const observer = new ResizeObserver((entries) =>
-      setCompact(entries[0].contentRect.width < 560),
-    );
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      if (width > 0 && height > 0) setStageSize({ width, height });
+    });
     observer.observe(element);
     return () => {
       element.removeEventListener("wheel", zoom);
@@ -279,13 +295,22 @@ export default function IdeasView({
       setPointChoice({
         ids: choices.map((point) => point.p.id),
         x: clamp(position.x - stage.left, 125, stage.width - 125),
-        y: clamp(position.y - stage.top + 14, 42, stage.height - 150),
+        y: clamp(
+          position.y - stage.top + 14,
+          42,
+          Math.max(42, stage.height - 280),
+        ),
         coincident: coincident.length > 1,
       });
     } else {
       onSelect(firstPoint.p.id);
       focusPoint(firstPoint.p.id);
     }
+  }
+
+  function closeComparison() {
+    setComparing(false);
+    requestAnimationFrame(() => compareToggle.current?.focus());
   }
 
   function setView(name: string, yaw: number, pitch: number) {
@@ -383,8 +408,8 @@ export default function IdeasView({
       const y = clamp(position.y, 22, HEIGHT - 22);
       const halfWidth =
         Math.max(
-          axis.name.length * (compact ? 8 : 4),
-          (side < 0 ? axis.low : axis.high).length * (compact ? 11 : 6),
+          axis.name.length * 5,
+          (side < 0 ? axis.low : axis.high).length * 7,
         ) /
           2 +
         10;
@@ -406,7 +431,7 @@ export default function IdeasView({
   ]) {
     if (!labelIds.has(point.p.id)) continue;
     const radius = 5.5 * point.perspective;
-    const width = point.p.name.length * (compact ? 8.5 : 6);
+    const width = point.p.name.length * 7;
     const candidates: {
       x: number;
       y: number;
@@ -465,6 +490,7 @@ export default function IdeasView({
           </p>
         </div>
         <button
+          ref={compareToggle}
           className={`is-compare-button ${comparing ? "is-active" : ""}`}
           type="button"
           aria-expanded={comparing}
@@ -537,7 +563,8 @@ export default function IdeasView({
       <div className="is-stage">
         <div className="is-stage-top">
           <span>
-            <i /> {visible.length} thinkers in view
+            <i /> {visible.length} thinkers
+            <span className="is-count-suffix"> in view</span>
           </span>
           <label>
             <input
@@ -551,7 +578,7 @@ export default function IdeasView({
         <svg
           ref={canvas}
           className={`is-canvas ${compact ? "is-compact" : ""} ${dragging ? "is-dragging" : ""}`}
-          viewBox={compact ? `180 0 600 ${HEIGHT}` : `0 0 ${WIDTH} ${HEIGHT}`}
+          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           role="group"
           aria-label="Interactive 3D Cartesian plot. Drag to orbit, use arrow keys to rotate, and select a philosopher to read their ideas."
           tabIndex={0}
@@ -589,17 +616,6 @@ export default function IdeasView({
             }
           }}
         >
-          <defs>
-            <radialGradient id="is-space-background">
-              <stop offset="0%" stopColor="#f3f0e9" />
-              <stop offset="100%" stopColor="#fbfaf6" />
-            </radialGradient>
-          </defs>
-          <rect
-            width={WIDTH}
-            height={HEIGHT}
-            fill="url(#is-space-background)"
-          />
           <g className="is-grid" aria-hidden="true">
             {GRID.map(([a, b], i) => {
               const start = project(a, camera);
@@ -851,8 +867,12 @@ export default function IdeasView({
           <div
             className="is-tooltip"
             style={{
-              left: `${clamp(((tooltipPoint.x - (compact ? 180 : 0)) / (compact ? 600 : WIDTH)) * 100, compact ? 30 : 18, compact ? 70 : 78)}%`,
-              top: `${clamp((tooltipPoint.y / HEIGHT) * 100 + 8, 15, compact ? 37 : 64)}%`,
+              left: `${clamp((tooltipPoint.x / WIDTH) * 100, compact ? 30 : 18, compact ? 70 : 78)}%`,
+              top: clamp(
+                tooltipPoint.y + 16,
+                compact ? 330 : 220,
+                Math.max(330, HEIGHT - 235),
+              ),
             }}
             aria-hidden="true"
           >
@@ -942,23 +962,28 @@ export default function IdeasView({
       </div>
 
       <div className="is-legend">
-        <div
-          className="is-lane-key"
-          aria-label="Colors represent philosophical questions"
-        >
-          {colorMode === "question" ? (
-            LANES.map((lane) => (
-              <span key={lane.id}>
-                <i style={{ background: lane.color }} />
-                {lane.label}
+        <details className="is-color-key">
+          <summary>
+            Color key <ChevronDown size={12} />
+          </summary>
+          <div
+            className="is-lane-key"
+            aria-label="Colors represent philosophical questions"
+          >
+            {colorMode === "question" ? (
+              LANES.map((lane) => (
+                <span key={lane.id}>
+                  <i style={{ background: lane.color }} />
+                  {lane.label}
+                </span>
+              ))
+            ) : (
+              <span className="is-gradient-key">
+                <i /> Matter <span>↔</span> Mind
               </span>
-            ))
-          ) : (
-            <span className="is-gradient-key">
-              <i /> Matter <span>↔</span> Mind
-            </span>
-          )}
-        </div>
+            )}
+          </div>
+        </details>
         <label className="is-color-select">
           Color by{" "}
           <select
@@ -975,8 +1000,10 @@ export default function IdeasView({
         </label>
       </div>
 
-      <div className="is-editorial-note">
-        <span className="is-note-mark">i</span>
+      <details className="is-editorial-note">
+        <summary>
+          Reading this atlas <ChevronDown size={13} />
+        </summary>
         <p>
           <strong>A map for thinking, not a measure of truth.</strong> Positions
           are editorial interpretations, not scores or settled classifications.
@@ -984,18 +1011,16 @@ export default function IdeasView({
           not rank moral value. Nearby points may share a lens while disagreeing
           profoundly. Numbered dots contain multiple thinkers; click to choose.
         </p>
-      </div>
+      </details>
 
       {selected && !comparing && (
-        <div className="is-selected-context">
-          <span>
+        <details className="is-selected-context" key={selected.id}>
+          <summary>
             <i style={{ background: pointColor(selected) }} />
-            <strong>{selected.name}</strong> · interpreting this position
-          </span>
-          <details className="is-position-reasoning" key={selected.id}>
-            <summary>
-              Why this position? <ChevronDown size={13} />
-            </summary>
+            <strong>{selected.name}</strong>
+            <span>Why this position?</span> <ChevronDown size={13} />
+          </summary>
+          <div className="is-position-reasoning">
             <div>
               {AXES.map((axis) => (
                 <article key={axis.id}>
@@ -1013,14 +1038,14 @@ export default function IdeasView({
                 Read the works and reference sources for context.
               </p>
             </div>
-          </details>
+          </div>
           <button
             disabled={philosophers.length < 2}
             onClick={() => setComparing(true)}
           >
             Compare perspectives <ArrowUpRight size={14} />
           </button>
-        </div>
+        </details>
       )}
 
       {comparing && !second && (
@@ -1037,16 +1062,19 @@ export default function IdeasView({
           className="is-comparison"
           role="region"
           aria-label="Compare philosophical perspectives"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.stopPropagation();
+              closeComparison();
+            }
+          }}
         >
           <div className="is-comparison-heading">
             <div>
               <div className="is-eyebrow">READ THE DIFFERENCES</div>
               <h3>Two thinkers, three lenses.</h3>
             </div>
-            <button
-              onClick={() => setComparing(false)}
-              aria-label="Close comparison"
-            >
+            <button onClick={closeComparison} aria-label="Close comparison">
               Close
             </button>
           </div>

@@ -2,6 +2,8 @@
 
 A connected website for exploring philosophy through time, geography, and ideas. The three pages share a selected thinker and year, with that context saved in the URL for sharing and reloading.
 
+Each visualization fills the viewport. Navigation, filters, question keys, and expandable reading panels overlay the canvas. Parchment, classical typography, and a faint public-domain Raphael fresco establish a sense of history. See the [design notes and asset credits](docs/design.md).
+
 ## Run locally
 
 Requires Node.js 22.12+ (the cloud environment has Node.js 24).
@@ -18,7 +20,9 @@ npm run build
 npm run preview -- --port 4173
 ```
 
-The static output is `dist/`. A deployment must route `/timeline`, `/map`, and `/ideas` to `index.html` (a typical SPA fallback). There is no backend, API key, external font, or runtime map service. World geography is bundled locally from the `world-atlas` package.
+The static output is `dist/`. A deployment must route `/timeline`, `/map`, and `/ideas` to `index.html` (a typical SPA fallback). There is no backend, API key, externally loaded font, or runtime map service. World geography, licensed fonts, and the public-domain artwork are bundled locally.
+
+For GitHub Pages at the repository's `/PhilTimeLine/` path, run `npm run build:pages`. This sets the asset/router base path and creates static entry points for all three views, plus `.nojekyll` and a fallback page. Publish the contents of `dist/` to the `gh-pages` branch with Pages configured to serve its root. The normal `npm run build` retains root-path hosting support.
 
 ## Explore
 
@@ -27,6 +31,8 @@ The static output is `dist/`. A deployment must route `/timeline`, `/map`, and `
 - **Idea space:** drag to orbit a projected 3D Cartesian space, change projection or color encoding, inspect the reasons behind each placement, and compare two thinkers along all three lenses.
 
 Colors represent primary philosophical questions across all three pages. Timeline vertical position groups those questions; horizontal position represents time. The 3D lenses are matter ↔ mind, experience ↔ reason, and personal agency ↔ social relations. They are explicitly editorial interpretations, not measurements or doctrinal equivalences.
+
+Select a chart mark to update the reading tab, then expand it to read works and sources. Closing it preserves the thinker, year, and canvas size. Search opens the reader directly. On phones, detailed reading panels open as overlays above the visualization.
 
 ## Research and uncertainty
 
@@ -48,9 +54,9 @@ npm run test:data
 npm test
 ```
 
-All 28 desktop/mobile browser tests passed, covering routes, shared state and history, timeline gestures and work selection, contextual events, posthumous reception, map playback cleanup, actual 3D reprojection and dot-center selection, rationale comparison, search and filters, uncertainty, dialogs, overflow, and default-state WCAG A/AA audits. They use system Chromium when available. Otherwise install the Playwright browser with `npx playwright install chromium`, or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to a compatible executable. Structural data validation does not establish historical truth; automated accessibility checks do not exhaust accessibility assessment.
+All 32 desktop/mobile browser tests passed, covering routes, shared state and history, timeline gestures and work selection, contextual events, posthumous reception, map playback cleanup, actual 3D reprojection and dot-center selection, rationale comparison, search and filters, uncertainty, dialogs, overflow, full-viewport sizing, overlay behavior, and default/expanded-reading WCAG A/AA audits. The timeline scroll-overlap regression also passed after the review fix. Tests use system Chromium when available. Otherwise install the Playwright browser with `npx playwright install chromium`, or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to a compatible executable. Structural data validation does not establish historical truth; automated accessibility checks do not exhaust accessibility assessment.
 
-The [independent review](docs/reviews.md) improved from 7.3/10 to 8.1/10 over two rounds, with no material blocker remaining. Review stopped within the requested limit of three scoring rounds.
+The [independent review](docs/reviews.md) improved from 7.3/10 to 8.1/10 during the original build. The immersive historical redesign improved from 8.1/10 to **8.4/10** over two rounds, with no blockers. Both review cycles stopped within the requested limit of three scoring rounds.
 
 ## Structure
 

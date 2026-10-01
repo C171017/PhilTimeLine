@@ -6,9 +6,11 @@ import {
   BookOpen,
   Check,
   ChevronDown,
+  ChevronUp,
   Compass,
   ExternalLink,
   Globe2,
+  HelpCircle,
   Layers3,
   MapPin,
   Search,
@@ -71,10 +73,15 @@ const views = [
       "Explore affinities and tensions through three lenses on reality, knowledge, and ethical life.",
   },
 ];
+const viewPath = (view: View) => `${import.meta.env.BASE_URL}${view}`;
 const getView = (): View =>
-  window.location.pathname.startsWith("/map")
+  window.location.pathname
+    .slice(import.meta.env.BASE_URL.length - 1)
+    .startsWith("/map")
     ? "map"
-    : window.location.pathname.startsWith("/ideas")
+    : window.location.pathname
+          .slice(import.meta.env.BASE_URL.length - 1)
+          .startsWith("/ideas")
       ? "ideas"
       : "timeline";
 const initialParams = new URLSearchParams(window.location.search);
@@ -106,7 +113,7 @@ function Logo() {
         </svg>
       </span>
       <span>
-        philosophy<span className="brand-light">atlas</span>
+        Philosophy<span className="brand-light">Atlas</span>
       </span>
     </span>
   );
@@ -268,7 +275,7 @@ function Inspector({
         <span className="tradition-label">{p.tradition}</span>
         <h2>{p.name}</h2>
         <p className="life-dates">{lifeDates(p)}</p>
-        <span className="question-badge" style={{ color: lane.color }}>
+        <span className="question-badge">
           <span style={{ background: lane.color }} />
           {lane.label}
         </span>
@@ -448,6 +455,9 @@ export default function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [compactLegend, setCompactLegend] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [inspectorExpanded, setInspectorExpanded] = useState(false);
+  const inspectorToggle = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const searchContainer = useRef<HTMLDivElement>(null);
   const meta = views.find((v) => v.id === view)!;
@@ -475,18 +485,27 @@ export default function App() {
           )
         : [
             selected,
-            ...philosophers.filter((p) =>
-              ["plato", "descartes", "kant", "confucius", "beauvoir"].includes(
-                p.id,
-              ),
+            ...philosophers.filter(
+              (p) =>
+                p.id !== selected?.id &&
+                [
+                  "plato",
+                  "descartes",
+                  "kant",
+                  "confucius",
+                  "beauvoir",
+                ].includes(p.id),
             ),
           ].filter((p): p is Philosopher => !!p)
     ).slice(0, 7);
   }, [query, selected]);
   const navigate = (next: View) => {
     setView(next);
+    setFiltersOpen(false);
+    setCompactLegend(false);
+    setSearchOpen(false);
     const url = new URL(window.location.href);
-    url.pathname = `/${next}`;
+    url.pathname = viewPath(next);
     window.history.pushState({}, "", url);
   };
   useEffect(() => {
@@ -512,7 +531,11 @@ export default function App() {
         searchRef.current?.focus();
         setSearchOpen(true);
       }
-      if (e.key === "Escape") setSearchOpen(false);
+      if (e.key === "Escape") {
+        setSearchOpen(false);
+        setFiltersOpen(false);
+        setCompactLegend(false);
+      }
     };
     const outside = (e: PointerEvent) => {
       if (!searchContainer.current?.contains(e.target as Node))
@@ -534,24 +557,55 @@ export default function App() {
     setTradition("all");
     setQuery("");
     setSearchOpen(false);
+    setInspectorExpanded(true);
+    setFiltersOpen(false);
+    setCompactLegend(false);
     searchRef.current?.blur();
   };
+  const chooseThinker = (id: string) => {
+    setSelectedId(id);
+    setFiltersOpen(false);
+    setCompactLegend(false);
+  };
+  const collapseInspector = () => {
+    setInspectorExpanded(false);
+    requestAnimationFrame(() => inspectorToggle.current?.focus());
+  };
+  useEffect(() => {
+    if (!inspectorExpanded) return;
+    const key = (event: KeyboardEvent) => {
+      const target = event.target as Element | null;
+      if (
+        event.key === "Escape" &&
+        !event.defaultPrevented &&
+        !target?.closest?.('[role="dialog"], .is-comparison, .tl-popup')
+      ) {
+        setInspectorExpanded(false);
+        requestAnimationFrame(() => inspectorToggle.current?.focus());
+      }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [inspectorExpanded]);
   const props = {
     philosophers: filtered,
     events: historicalEvents,
     selectedId,
     year,
-    onSelect: setSelectedId,
+    onSelect: chooseThinker,
     onYearChange: (value: number) => setYear(clampYear(value)),
   };
   return (
-    <div className="app">
+    <div className={`app immersive view-${view}`}>
+      <div className="atlas-art" aria-hidden="true" />
+      <div className="atlas-grain" aria-hidden="true" />
+      <div className="atlas-frame" aria-hidden="true" />
       <a className="skip-link" href="#atlas-main">
         Skip to atlas
       </a>
       <header className="site-header">
         <a
-          href="/timeline"
+          href={viewPath("timeline")}
           aria-label="Philosophy Atlas home"
           onClick={(e) => {
             e.preventDefault();
@@ -564,7 +618,7 @@ export default function App() {
           {views.map((v) => (
             <a
               key={v.id}
-              href={`/${v.id}?year=${year}${selectedId ? `&thinker=${selectedId}` : ""}`}
+              href={`${viewPath(v.id)}?year=${year}${selectedId ? `&thinker=${selectedId}` : ""}`}
               aria-current={view === v.id ? "page" : undefined}
               onClick={(e) => {
                 if (!e.metaKey && !e.ctrlKey) {
@@ -638,8 +692,17 @@ export default function App() {
           )}
         </div>
         <button
+          className="header-guide icon-button"
+          aria-label="How to explore"
+          title="How to explore"
+          onClick={() => setDialog("guide")}
+        >
+          <HelpCircle size={18} />
+        </button>
+        <button
           className="header-about icon-button"
-          aria-label="About this atlas"
+          aria-label="Sources & methodology"
+          title="Sources & methodology"
           onClick={() => setDialog("method")}
         >
           <Compass size={20} />
@@ -649,29 +712,61 @@ export default function App() {
         <section className="intro">
           <div>
             <div className="intro-eyebrow">
-              <span className="live-dot" />
-              <span>AN ATLAS OF PHILOSOPHY</span>
-              <span className="intro-divider" />
-              <span>
-                {meta.number} / {meta.label.toUpperCase()}
+              <span className="chapter-number">
+                {["I", "II", "III"][views.indexOf(meta)]}
               </span>
+              <span>{meta.label.toUpperCase()}</span>
+              <span className="intro-divider" />
+              <span>2,600 YEARS OF INQUIRY</span>
             </div>
             <h1>{meta.title}</h1>
             <p>{meta.subtitle}</p>
           </div>
-          <div className="intro-aside">
-            <div className="atlas-stat">
-              <strong>
-                2,600<span>+</span>
-              </strong>
-              <span>years of inquiry</span>
-            </div>
-            <button onClick={() => setDialog("guide")}>
-              How to explore <ArrowUpRight size={14} />
-            </button>
-          </div>
         </section>
-        <div className="explore-toolbar">
+        <div className="overlay-switches">
+          <button
+            className={`overlay-toggle ${filtersOpen ? "is-active" : ""}`}
+            aria-expanded={filtersOpen}
+            aria-controls="atlas-filters"
+            onClick={() => {
+              setFiltersOpen(!filtersOpen);
+              setCompactLegend(false);
+              setInspectorExpanded(false);
+            }}
+          >
+            <SlidersHorizontal size={14} />
+            Filters
+            {(lane !== "all" || tradition !== "all") && (
+              <span className="filter-count">
+                {[lane !== "all", tradition !== "all"].filter(Boolean).length}
+              </span>
+            )}
+            <ChevronDown size={12} />
+          </button>
+          <button
+            className={`overlay-toggle ${compactLegend ? "is-active" : ""}`}
+            aria-expanded={compactLegend}
+            aria-controls="atlas-question-key"
+            onClick={() => {
+              setCompactLegend(!compactLegend);
+              setFiltersOpen(false);
+              setInspectorExpanded(false);
+            }}
+          >
+            <span className="key-dots" aria-hidden="true">
+              {LANES.slice(0, 3).map((l) => (
+                <i key={l.id} style={{ background: l.color }} />
+              ))}
+            </span>
+            The questions
+            <ChevronDown size={12} />
+          </button>
+        </div>
+        <div
+          id="atlas-filters"
+          className="explore-toolbar"
+          hidden={!filtersOpen}
+        >
           <div className="filter-controls">
             <span className="eyebrow toolbar-label">
               <SlidersHorizontal size={13} />
@@ -728,7 +823,7 @@ export default function App() {
             </button>
           </div>
         </div>
-        <div className={`atlas-workspace ${selected ? "has-inspector" : ""}`}>
+        <div className="atlas-workspace">
           <section
             className="visual-panel"
             aria-label={`${meta.label} exploration`}
@@ -800,25 +895,61 @@ export default function App() {
               </div>
             )}
           </section>
-          {selected && (
+          {selected && inspectorExpanded && (
             <Inspector
               philosopher={selected}
               year={year}
               view={view}
               onNavigate={navigate}
               onYearChange={(value) => setYear(clampYear(value))}
-              onSelect={setSelectedId}
-              onClose={() => setSelectedId(null)}
+              onSelect={chooseThinker}
+              onClose={collapseInspector}
             />
           )}
+          {selected && !inspectorExpanded && (
+            <aside
+              className="inspector-peek"
+              aria-label="Selected philosopher"
+              data-testid="inspector"
+            >
+              <button
+                ref={inspectorToggle}
+                onClick={() => {
+                  setInspectorExpanded(true);
+                  setFiltersOpen(false);
+                  setCompactLegend(false);
+                }}
+                aria-expanded={false}
+                aria-label={`Read about ${selected.name}`}
+              >
+                <span className="peek-book">
+                  <BookOpen size={19} />
+                </span>
+                <span className="peek-identity">
+                  <span className="eyebrow">SELECTED THINKER</span>
+                  <h2>{selected.name}</h2>
+                  <span className="life-dates">{lifeDates(selected)}</span>
+                </span>
+                <ChevronUp size={16} />
+              </button>
+            </aside>
+          )}
         </div>
-        <div className={`question-legend ${compactLegend ? "expanded" : ""}`}>
-          <button
-            className="legend-toggle"
-            onClick={() => setCompactLegend(!compactLegend)}
-          >
-            THE QUESTIONS <ChevronDown size={12} />
-          </button>
+        <div
+          id="atlas-question-key"
+          className="question-legend"
+          hidden={!compactLegend}
+        >
+          <div className="legend-heading">
+            <span className="eyebrow">THE FIVE QUESTIONS</span>
+            <button
+              className="icon-button"
+              aria-label="Close question key"
+              onClick={() => setCompactLegend(false)}
+            >
+              <X size={14} />
+            </button>
+          </div>
           <div>
             {LANES.map((l) => (
               <button
@@ -838,18 +969,6 @@ export default function App() {
           </span>
         </div>
       </main>
-      <footer className="site-footer">
-        <span>
-          <span className="footer-mark">A</span>Every idea begins with a
-          question.
-        </span>
-        <div>
-          <span>A curated collection, growing over time</span>
-          <button onClick={() => setDialog("method")}>
-            Sources & methodology <ArrowUpRight size={12} />
-          </button>
-        </div>
-      </footer>
       {dialog && (
         <Modal
           title={
@@ -976,6 +1095,19 @@ export default function App() {
                   those differences.
                 </p>
               </div>
+              <p className="art-credit">
+                Fresco backdrop: Raphael, <em>The School of Athens</em>,
+                1509–1511. Public-domain reproduction from{" "}
+                <a
+                  href="https://commons.wikimedia.org/wiki/File:La_scuola_di_Atene.jpg"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Wikimedia Commons
+                </a>
+                . Typography: EB Garamond and Cinzel, bundled under the SIL Open
+                Font License.
+              </p>
               <button
                 className="primary-button"
                 onClick={() => setDialog(null)}
